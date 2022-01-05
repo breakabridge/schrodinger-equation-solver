@@ -162,13 +162,13 @@ void RK4Step(complex * psi) {
 }
 
 int main()  {
-    float r0[2] = {dx * N/2, dx * N / 4};
-    float k[2]  = {0, 60};
-    float sigma = 0.1;
+    float r0[2] = {dx * N/2, dx * N / 4};   // INITIAL POSITION OF PARTICLE / WAVEPACKET
+    float k[2]  = {0, 60};  // WAVEVECTOR
+    float sigma = 0.1;  // WIDTH OF GAUSSIAN
 
     initialise(psi, potential);
     setup(psi, potential, r0, k, sigma);
-    addHorizontalSlits(potential, 0, 10, (N+1)/2);  // CAN BE DELETED, CHANGED, ETC.
+    addHorizontalSlits(potential, 0, 10, (N+1)/2);  // CAN BE DELETED, CHANGED, ETC. THIS ADDS A HARD WALL SINCE slitWidth = 0.
     
     std::ofstream file;
     file.open("schrodinger_sim.dat");
@@ -182,7 +182,7 @@ int main()  {
         
         for (int x = 0; x < N+2; x++)   {
             for (int y = 0; y < N+2; y++)   {
-                file << modSquared(psi[IX(x, y)]) << ",";   // WE OUTPUT |psi|^2 TO THE FILE
+                file << modSquared(psi[IX(x, y)]) << ",";   // OUTPUTS |psi|^2 TO THE FILE.
             }
         }
         file << "\n";
