@@ -88,10 +88,11 @@ void setup(complex * psi, float * potential, float * r0, float * k, float sigma)
     float constant1 = 0.5 / (sigma * sigma);
     float constant2 = 0.5 / (dx * dx);
     complex factor;
-
+    float pos[2];
     for (int i = 0; i < N+2; i++)  {
+        pos[0] = dx * i;
         for (int j = 0; j < N+2; j++)   {
-            float pos[2] = {(float) dx * i, (float) dx * j};
+            pos[1] = dx * j;
             float relPos[2] = {pos[0] - r0[0], pos[1] - r0[1]};
             factor.real = cos(scalarProduct2D(k, pos)); factor.im = sin(scalarProduct2D(k, pos));
             psi[IX(i, j)] = psi[IX(i, j)] + exp(-constant1 * scalarProduct2D(relPos, relPos)) * factor;
@@ -99,6 +100,7 @@ void setup(complex * psi, float * potential, float * r0, float * k, float sigma)
             }
         }
 
+    // The following code may not be needed. This is to normalise the wavefunction so that the integral over the grid is 1.
     float integral = 0;
     for (int i = 0; i < N+2; i++)  {
         for (int j = 0; j < N+2; j++)   {
