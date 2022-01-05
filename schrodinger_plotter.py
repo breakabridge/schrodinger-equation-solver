@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-file = open("double_slit_sim.dat")
+file = open("schrodinger_sim.dat")
 data = file.readlines()
 file.close()
 line = data[0].split(",")
