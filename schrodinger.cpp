@@ -2,7 +2,6 @@
 #include <fstream>
 #include <cmath>
 
-#define SWAP(a, b)  {complex * tmp = a; a = b; b = tmp;}
 #define IX(i, j) ((i) + (N+2)*(j))
 
 typedef struct complex  {
