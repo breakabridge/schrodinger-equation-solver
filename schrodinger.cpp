@@ -16,11 +16,11 @@ typedef struct complex  {
 } complex;
 
 // SIMULATION PARAMETERS. CHANGE AS YOU WISH
-const int N = 99;
+const int N = 100;
 const int size = (N+2) * (N+2);
 float dx = 0.01;
 float dt = 2.5e-6;
-int frames = 400;
+int frames = 500;
 
 // WAVEFUNCTION AND POTENTIAL
 complex psi[size];
@@ -91,6 +91,7 @@ void initialise(complex * psi, float * potential)   {
         for (int j = 0; j < N+2; j++)   {
             psi[IX(i, j)] = zero;
             potential[IX(i, j)] = 0;
+            //potential[IX(i, j)] = exp(-1000000 * (i-1)) + exp(-1000000 * (j-1)) + exp(1000000 * (i - N)) + exp(1000000 * (j - N)); // INCLUDE FOR CLOSED BOUNDARIES
         }
     }
 }
@@ -108,23 +109,31 @@ void setup(complex * psi, float * potential, float * r0, float * k, float sigma)
             float relPos[2] = {pos[0] - r0[0], pos[1] - r0[1]};
             factor.real = cos(scalarProduct2D(k, pos)); factor.im = sin(scalarProduct2D(k, pos));
             psi[IX(i, j)] = psi[IX(i, j)] + exp(-constant1 * scalarProduct2D(relPos, relPos)) * factor;
-            potential[IX(i, j)] += 10000 * exp(-constant2 * (i * i + (j - N - 1) * (i - N - 1) + j * j + (j - N - 1) * (j - N - 1)));
-            }
         }
+    }
+}
 
-    // THE FOLLOWING CODE MAY NOT BE NEEDED. NORMALISES WAVEFUNCTION SO INTEGRAL OVER GRID OF |psi|^2 = 1.
-    float integral = 0;
-    for (int i = 0; i < N+2; i++)  {
-        for (int j = 0; j < N+2; j++)   {
-            integral += dx * dx * modSquared(psi[IX(i, j)]);
-        }
-    }
-    float a = 1/integral;
-    for (int i = 0; i < N+2; i++)  {
-        for (int j = 0; j < N+2; j++)   {
-            psi[IX(i, j)] = a * psi[IX(i, j)];
-        }
-    }
+// PERIODIC BOUNDARIES
+void set_bounds (complex * x)   {
+    for (int i = 1 ; i <= N ; i++)    {
+        x[IX(0,  i)].real = x[IX(N,i)].real;
+        x[IX(N+1,i)].real = x[IX(1,i)].real; 
+        x[IX(i,  0)].real = x[IX(i,N)].real; 
+        x[IX(i,N+1)].real = x[IX(i,1)].real;
+
+        x[IX(0,  i)].im = x[IX(N,i)].im;
+        x[IX(N+1,i)].im = x[IX(1,i)].im; 
+        x[IX(i,  0)].im = x[IX(i,N)].im; 
+        x[IX(i,N+1)].im = x[IX(i,1)].im;
+    } 
+    x[IX(0,    0)].real = 0.5 * (x[IX(1,  0)].real + x[IX(0,  1)].real); 
+    x[IX(0,  N+1)].real = 0.5 * (x[IX(1,N+1)].real + x[IX(0,  N)].real); 
+    x[IX(N+1,  0)].real = 0.5 * (x[IX(N,  0)].real + x[IX(N+1,1)].real); 
+    x[IX(N+1,N+1)].real = 0.5 * (x[IX(N,N+1)].real + x[IX(N+1,N)].real); 
+    x[IX(0,    0)].im = 0.5 * (x[IX(1,  0)].im + x[IX(0,  1)].im); 
+    x[IX(0,  N+1)].im = 0.5 * (x[IX(1,N+1)].im + x[IX(0,  N)].im); 
+    x[IX(N+1,  0)].im = 0.5 * (x[IX(N,  0)].im + x[IX(N+1,1)].im); 
+    x[IX(N+1,N+1)].im = 0.5 * (x[IX(N,N+1)].im + x[IX(N+1,N)].im); 
 }
 
 // RETURNS i * [laplacian(psi) - potential * psi]. FOR USE IN RUNGE-KUTTA STEP.
@@ -134,18 +143,7 @@ complex function(complex * psi, complex RKConstant, float * potential, int i, in
     return constant * (psi[IX(i+1, j)] + psi[IX(i-1, j)] + psi[IX(i, j+1)] + psi[IX(i, j-1)] - 4 * (psi[IX(i, j)] + RKConstant)) - potential[IX(i, j)] * (psi[IX(i, j)] + RKConstant);
 }
 
-// THE GOOD OLD EULER FORWARD STEP THAT DID NOT WORK VERY WELL. SHOULD PROBABLY BE REMOVED.
-void eulerStep(complex * psi)   {
-    complex zero; zero.real = 0; zero.im = 0;
-    complex * store = psi;
-    for (int i = 0; i < N+1; i++)   {
-        for (int j = 0; j < N+1; j++)   {
-            psi[IX(i, j)] = psi[IX(i, j)] + dt * function(psi, zero, potential, i, j);
-        }
-    }
-}
-
-// THE MUCH BETTER RUNGA-KUTTA 4th ORDER STEP.
+// THE RUNGE-KUTTA 4th ORDER STEP.
 void RK4Step(complex * psi) {
     complex k1, k2, k3, k4, zero;
     zero.real = 0; zero.im = 0; // 0 represented as 0 + 0i
@@ -162,22 +160,22 @@ void RK4Step(complex * psi) {
 }
 
 int main()  {
-    float r0[2] = {dx * N/2, dx * N / 4};   // INITIAL POSITION OF PARTICLE / WAVEPACKET
+    float r0[2] = {(float) 0.5 * dx * N, (float) 0.25 * dx * N};   // INITIAL POSITION OF PARTICLE / WAVEPACKET
     float k[2]  = {0, 60};  // WAVEVECTOR
-    float sigma = 0.1;  // WIDTH OF GAUSSIAN
+    float sigma = dx * N * 0.1;  // WIDTH OF GAUSSIAN
 
     initialise(psi, potential);
     setup(psi, potential, r0, k, sigma);
-    addHorizontalSlits(potential, 0, 10, (N+1)/2);  // CAN BE DELETED, CHANGED, ETC. THIS ADDS A HARD WALL SINCE slitWidth = 0.
-    
+    set_bounds(psi);
     std::ofstream file;
     file.open("schrodinger_sim.dat");
     file << N << "," << frames << "," << "\n";
 
     for (int i = 0; i < frames; i++)    {
         std::cout << i << "\n";
-        for (int k = 0; k < 16; k++)    {   // DONE 16 TIMES EVERY FRAME SO THE VIDEO ISN'T TOO SLOW
+        for (int k = 0; k < 24; k++)    {   // REPEATED SO THE VIDEO ISN'T TOO SLOW
             RK4Step(psi);
+            //set_bounds(psi);  // USE IF PERIODIC BOUNDARIES
         }
         
         for (int x = 1; x < N+1; x++)   {
