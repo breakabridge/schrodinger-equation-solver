@@ -7,6 +7,7 @@ large Gaussian spike).
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <chrono>
 
 #define IX(i, j) ((i) + (N+2)*(j))
 
@@ -167,12 +168,17 @@ int main()  {
     initialise(psi, potential);
     setup(psi, potential, r0, k, sigma);
     set_bounds(psi);
+
     std::ofstream file;
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
     file.open("schrodinger_sim.dat");
     file << N << "," << frames << "," << "\n";
 
     for (int i = 0; i < frames; i++)    {
-        std::cout << i << "\n";
+        std::cout << 100 * i / frames << "% " << 1.6666e-8 * (frames - i) * std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << " mins remaining\n";
+        begin = std::chrono::steady_clock::now();
         for (int k = 0; k < 24; k++)    {   // REPEATED SO THE VIDEO ISN'T TOO SLOW
             RK4Step(psi);
             //set_bounds(psi);  // USE IF PERIODIC BOUNDARIES
@@ -184,6 +190,9 @@ int main()  {
             }
         }
         file << "\n";
+        std::cout << "\x1b[1A";
+        std::cout << "\x1b[2K";
+        end = std::chrono::steady_clock::now();
     }
 
     file.close();
